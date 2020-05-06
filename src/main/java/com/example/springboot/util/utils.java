@@ -2,18 +2,21 @@ package com.example.springboot.util;
 
 import com.google.protobuf.ByteString;
 import org.apache.commons.codec.binary.Hex;
-import org.hyperledger.fabric.sdk.NetworkConfig;
+import org.hyperledger.fabric.sdk.*;
+import org.hyperledger.fabric.sdk.security.CryptoSuite;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 
 import static java.lang.String.format;
 
 public class utils {
 
-    public static String networkConfig = "./src/main/resources/Networkconfig.json";
+    public static String NetWorkConfig = "./src/main/resources/Networkconfig.json";
     public static String configUserPath = "./src/main/resources/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/keystore";
     public static ArrayList<ByteString> x509Header = new ArrayList<ByteString>();
 
@@ -58,20 +61,19 @@ public class utils {
             HFClient hfclient = HFClient.createNewInstance();
             CryptoSuite cryptoSuite = CryptoSuite.Factory.getCryptoSuite();
             hfclient.setCryptoSuite(cryptoSuite);
-            NetworkConfig networkConfig = NetworkConfig.fromJsonFile(new File(config_network_path));
-            hfclient.setUserContext(appUser);
-            hfclient.loadChannelFromConfig(channel, networkConfig);
-            myChannel = hfclient.getChannel(channel);
+            NetworkConfig networkConfig = NetworkConfig.fromJsonFile(new File(NetWorkConfig));
+            hfclient.setUserContext(appuser);
+            hfclient.loadChannelFromConfig("mychannel", networkConfig);
+            myChannel = hfclient.getChannel("mychannel");
             myChannel.initialize();
-            ChaincodeID chaincodeID = ChaincodeID.newBuilder().setName(chainCodeName)
+            ChaincodeID chaincodeID = ChaincodeID.newBuilder().setName("mycc")
                     .setVersion("1.0")
                     .build();
-            HFClient hfclient = HFClient.createNewInstance();
             QueryByChaincodeRequest transactionProposalRequest = hfclient.newQueryProposalRequest();
             transactionProposalRequest.setChaincodeID(chaincodeID);
-            transactionProposalRequest.setFcn(fcn);
-            transactionProposalRequest.setArgs(arguments);
-            transactionProposalRequest.setUserContext(getUser());
+            transactionProposalRequest.setFcn("query");
+            transactionProposalRequest.setArgs("a");
+            transactionProposalRequest.setUserContext(appuser);
             Collection<ProposalResponse> queryPropResp = myChannel.queryByChaincode(transactionProposalRequest);
             for (ProposalResponse response:queryPropResp) {
                 if (response.getStatus() == ChaincodeResponse.Status.SUCCESS) {
