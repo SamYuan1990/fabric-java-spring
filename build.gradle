@@ -17,6 +17,7 @@ dependencies {
 	testImplementation('org.springframework.boot:spring-boot-starter-test') {
 		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
 	}
+	implementation group: 'org.apache.commons', name: 'commons-pool2', version: '2.8.0'
 	implementation group: 'org.hyperledger.fabric-sdk-java', name: 'fabric-sdk-java', version: '1.4.6'
     implementation group: 'org.json', name: 'json', version: '20180813'
 }

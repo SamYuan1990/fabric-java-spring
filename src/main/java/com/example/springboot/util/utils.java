@@ -2,6 +2,7 @@ package com.example.springboot.util;
 
 import com.google.protobuf.ByteString;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.pool2.ObjectPool;
 import org.hyperledger.fabric.sdk.*;
 import org.hyperledger.fabric.sdk.security.CryptoSuite;
 
@@ -36,6 +37,25 @@ public class utils {
 
     }
 
+    private  static ObjectPool<Channel> myChannelPool = new FabricJavaPool("./src/main/resources/Networkconfig.json", getUser(), "mychannel");
+
+    public static User getUser() {
+        User appuser = null;
+        File sampleStoreFile = new File(System.getProperty("user.home") + "/test.properties");
+        if (sampleStoreFile.exists()) { //For testing start fresh
+            sampleStoreFile.delete();
+        }
+        final SampleStore sampleStore = new SampleStore(sampleStoreFile);
+        try {
+            appuser = sampleStore.getMember("peer1", "Org1", "Org1MSP",
+                    new File(String.valueOf(findFileSk(Paths.get(configUserPath).toFile()))),
+                    new File("./src/main/resources/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/signcerts/Admin@org1.example.com-cert.pem"));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return appuser;
+    }
+
     public static NetworkConfig loadConfig(String config_network_path) {
         try {
             return NetworkConfig.fromJsonFile(new File(config_network_path));
@@ -43,6 +63,42 @@ public class utils {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public static String query(Channel myChannel, String chainCodeName, String fcn, String... arguments) {
+        String payload = "";
+        try {
+            ChaincodeID chaincodeID = ChaincodeID.newBuilder().setName(chainCodeName)
+                    .setVersion("1.0")
+                    .build();
+            HFClient hfclient = HFClient.createNewInstance();
+            QueryByChaincodeRequest transactionProposalRequest = hfclient.newQueryProposalRequest();
+            transactionProposalRequest.setChaincodeID(chaincodeID);
+            transactionProposalRequest.setFcn(fcn);
+            transactionProposalRequest.setArgs(arguments);
+            transactionProposalRequest.setUserContext(getUser());
+            Collection<ProposalResponse> queryPropResp = myChannel.queryByChaincode(transactionProposalRequest);
+            for (ProposalResponse response:queryPropResp) {
+                if (response.getStatus() == ChaincodeResponse.Status.SUCCESS) {
+                    payload = response.getProposalResponse().getResponse().getPayload().toStringUtf8();
+                }
+            }
+        } catch (Exception e) {
+            System.out.printf(e.toString());
+        }
+        return payload;
+    }
+
+    public static String QueryWithPool(){
+        String rs = "";
+        try {
+            Channel myChannel = myChannelPool.borrowObject();
+            rs = query(myChannel, "mycc", "query", "a");
+            myChannelPool.returnObject(myChannel);
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+        return rs;
     }
 
     public static String QueryWithOutPool(){
