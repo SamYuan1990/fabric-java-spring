@@ -4,12 +4,25 @@ import com.example.springboot.util.utils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@RestController
-public class PoolController {
+import java.util.Random;
 
-	@RequestMapping("/Pool")
+@RestController
+public class PoolCacheController {
+
+	@RequestMapping("/PoolCache")
 	public String index() {
-		return "Greetings from Spring Boot! "+ utils.QueryWithPool();
+
+		String data = "";
+		Random r = new Random(10);
+		double d2 = r.nextDouble()* 5;
+		if(d2>4) {
+			data = utils.QueryWithPool();
+		}
+		else{
+			data = "90";
+		}
+
+		return "Greetings from Spring Boot! "+ data;
 	}
 
 }
