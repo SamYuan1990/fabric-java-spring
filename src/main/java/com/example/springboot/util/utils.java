@@ -1,15 +1,15 @@
 package com.example.springboot.util;
 
+import com.github.samyuan1990.FabricJavaPool.ExecuteResult;
+import com.github.samyuan1990.FabricJavaPool.FabricConnection;
 import com.github.samyuan1990.FabricJavaPool.FabricJavaPool;
+import com.github.samyuan1990.FabricJavaPool.Util;
 import com.google.protobuf.ByteString;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.pool2.ObjectPool;
 import org.hyperledger.fabric.sdk.*;
 import org.hyperledger.fabric.sdk.security.CryptoSuite;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -20,7 +20,7 @@ public class utils {
 
     public static String NetWorkConfig = "./src/main/resources/Networkconfig.json";
     public static String configUserPath = "./src/main/resources/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/keystore";
-    public static ArrayList<ByteString> x509Header = new ArrayList<ByteString>();
+    private static ChaincodeID cci = Util.generateChainCodeID("mycc", "1.0");
 
     public static File findFileSk(File directory) {
 
@@ -38,7 +38,7 @@ public class utils {
 
     }
 
-    private  static ObjectPool<Channel> myChannelPool = new FabricJavaPool("./src/main/resources/Networkconfig.json", getUser(), "mychannel");
+    private  static ObjectPool<FabricConnection> fabricJavaPool = new FabricJavaPool(getUser(), "mychannel");
 
     public static User getUser() {
         User appuser = null;
@@ -57,45 +57,14 @@ public class utils {
         return appuser;
     }
 
-    public static NetworkConfig loadConfig(String config_network_path) {
-        try {
-            return NetworkConfig.fromJsonFile(new File(config_network_path));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    public static String query(Channel myChannel, String chainCodeName, String fcn, String... arguments) {
-        String payload = "";
-        try {
-            ChaincodeID chaincodeID = ChaincodeID.newBuilder().setName(chainCodeName)
-                    .setVersion("1.0")
-                    .build();
-            HFClient hfclient = HFClient.createNewInstance();
-            QueryByChaincodeRequest transactionProposalRequest = hfclient.newQueryProposalRequest();
-            transactionProposalRequest.setChaincodeID(chaincodeID);
-            transactionProposalRequest.setFcn(fcn);
-            transactionProposalRequest.setArgs(arguments);
-            transactionProposalRequest.setUserContext(getUser());
-            Collection<ProposalResponse> queryPropResp = myChannel.queryByChaincode(transactionProposalRequest);
-            for (ProposalResponse response:queryPropResp) {
-                if (response.getStatus() == ChaincodeResponse.Status.SUCCESS) {
-                    payload = response.getProposalResponse().getResponse().getPayload().toStringUtf8();
-                }
-            }
-        } catch (Exception e) {
-            System.out.printf(e.toString());
-        }
-        return payload;
-    }
-
     public static String QueryWithPool(){
         String rs = "";
         try {
-            Channel myChannel = myChannelPool.borrowObject();
-            rs = query(myChannel, "mycc", "query", "a");
-            myChannelPool.returnObject(myChannel);
+            FabricConnection myConnection = fabricJavaPool.borrowObject();
+            //rs = query(myChannel, "mycc", "query", "a");
+            ExecuteResult result = myConnection.query(cci,"query","a");
+            rs = result.getResult();
+            fabricJavaPool.returnObject(myConnection);
         } catch (Exception e){
             e.printStackTrace();
         }
