@@ -1,9 +1,9 @@
 package com.example.springboot.util;
 
 import com.github.samyuan1990.FabricJavaPool.ExecuteResult;
-import com.github.samyuan1990.FabricJavaPool.FabricConnection;
-import com.github.samyuan1990.FabricJavaPool.FabricJavaPool;
+import com.github.samyuan1990.FabricJavaPool.FabricConnectionPoolFactory;
 import com.github.samyuan1990.FabricJavaPool.Util;
+import com.github.samyuan1990.FabricJavaPool.api.FabricConnection;
 import com.google.protobuf.ByteString;
 import org.apache.commons.pool2.ObjectPool;
 import org.hyperledger.fabric.sdk.*;
@@ -38,7 +38,9 @@ public class utils {
 
     }
 
-    private  static ObjectPool<FabricConnection> fabricJavaPool = new FabricJavaPool(getUser(), "mychannel");
+    private  static  ObjectPool<FabricConnection>  fabricJavaPool = FabricConnectionPoolFactory.getPool(getUser(), "mychannel");
+
+    //GenericObjectPool<FabricConnection> fabricJavaPool = FabricConnectionPoolFactory.getPool(getUser(),"mychannel");//new FabricJavaPool(getUser(), "mychannel");
 
     public static User getUser() {
         User appuser = null;
@@ -62,7 +64,7 @@ public class utils {
         try {
             FabricConnection myConnection = fabricJavaPool.borrowObject();
             //rs = query(myChannel, "mycc", "query", "a");
-            ExecuteResult result = myConnection.query(cci,"query","a");
+            ExecuteResult result = myConnection.query("mycc", "query","a");
             rs = result.getResult();
             fabricJavaPool.returnObject(myConnection);
         } catch (Exception e){
